@@ -37,6 +37,10 @@ app.post('/terminal', (req, res) => {
       logs += data;
     });
 
+    terminal.on('exit', (exitCode, signal) => {
+      exitTerminal(exitCode, signal);
+    });
+
     res.status(201).send(terminal.pid.toString());
   } else {
     res.sendStatus(204);
@@ -78,10 +82,7 @@ app.ws('/terminal', (ws, res) => {
   });
 
   ws.on('close', () => {
-    terminal!.kill();
-    terminal = undefined;
-    console.log('Terminal closed');
-    logs = '';
+    exitTerminal(0);
   });
 });
 
@@ -101,4 +102,13 @@ function removeUndefined(env: NodeJS.ProcessEnv): PtyEnv {
     });
 
   return result;
+}
+
+function exitTerminal(exitCode: number, signal?: number): void {
+  if (terminal) {
+    terminal!.kill();
+    terminal = undefined;
+    console.log(`Terminal closed: exitCode=${exitCode}, signal=${signal}`);
+    logs = '';
+  }
 }
