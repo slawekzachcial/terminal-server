@@ -24,7 +24,7 @@ function createTerminal(): void {
     if (!pid) {
       return;
     }
-    fetch('/terminal/resize?cols=' + size.cols + '&rows=' + size.rows, {method: 'POST'});
+    fetch(`/terminal/resize?cols=${size.cols}&rows=${size.rows}`, {method: 'POST'});
   });
 
   terminal.open(terminalContainer!);

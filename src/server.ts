@@ -23,7 +23,6 @@ app.post('/terminal', (req, res) => {
     const rows = parseInt(req.query.rows as string) || 24;
     const env = removeUndefined(process.env);
 
-    console.log('Creating terminal');
     terminal = spawn('bash', [], {
       name: 'xterm-color',
       cols: cols,
@@ -32,13 +31,15 @@ app.post('/terminal', (req, res) => {
       env: env,
     });
 
+    console.log(`Terminal created: pid=${terminal.pid}`);
     logs = '';
+
     terminal.on('data', data => {
       logs += data;
     });
 
     terminal.on('exit', (exitCode, signal) => {
-      exitTerminal(exitCode, signal);
+      closeTerminal(exitCode, signal);
     });
 
     res.status(201).send(terminal.pid.toString());
@@ -82,7 +83,7 @@ app.ws('/terminal', (ws, res) => {
   });
 
   ws.on('close', () => {
-    exitTerminal(0);
+    closeTerminal(0);
   });
 });
 
@@ -104,11 +105,12 @@ function removeUndefined(env: NodeJS.ProcessEnv): PtyEnv {
   return result;
 }
 
-function exitTerminal(exitCode: number, signal?: number): void {
+function closeTerminal(exitCode: number, signal?: number): void {
   if (terminal) {
+    const pid = terminal.pid;
     terminal!.kill();
     terminal = undefined;
-    console.log(`Terminal closed: exitCode=${exitCode}, signal=${signal}`);
+    console.log(`Terminal closed: pid=${pid}, exitCode=${exitCode}, signal=${signal}`);
     logs = '';
   }
 }
