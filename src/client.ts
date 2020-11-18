@@ -32,9 +32,9 @@ function createTerminal(): void {
   terminal.focus();
 
   setTimeout(() => {
-    // updateTerminalSize();
+    const [cols, rows] = getTerminalColsAndRows();
 
-    fetch('/terminal', {method: 'POST'}).then(res => {
+    fetch(`/terminal?cols=${cols}&rows=${rows}`, {method: 'POST'}).then(res => {
       res.text().then(processId => {
         pid = processId;
         socket = new WebSocket(socketURL);
@@ -47,15 +47,15 @@ function createTerminal(): void {
   }, 0);
 }
 
-// function updateTerminalSize(): void {
-//   // TODO: how to deal with cols and rows?
-//   const cols = 80;
-//   const rows = 24;
-//   const width = (cols * terminal._core._renderService.dimensions.actualCellWidth + terminal._core.viewport.scrollBarWidth).toString() + 'px';
-//   const height = (rows * terminal._core._renderService.dimensions.actualCellHeight).toString() + 'px';
-//   terminalContainer!.style.width = width;
-//   terminalContainer!.style.height = height;
-//   fitAddon.fit();
-// }
+function getTerminalColsAndRows(): [number, number] {
+    const width = terminalContainer!.offsetWidth;
+    const height = terminalContainer!.offsetHeight;
+    // TODO: DANGER - using private terminal API :-(
+    const terminalCore = (terminal as any)._core;
+    const cols = Math.floor((width - terminalCore.viewport.scrollBarWidth) / terminalCore._renderService.dimensions.actualCellWidth);
+    const rows = Math.floor(height / terminalCore._renderService.dimensions.actualCellHeight);
+
+    return [cols, rows];
+}
 
 createTerminal();
