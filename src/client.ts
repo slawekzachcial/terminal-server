@@ -27,12 +27,27 @@ function createTerminal(): void {
     fetch(`/terminal/resize?cols=${size.cols}&rows=${size.rows}`, {method: 'POST'});
   });
 
+  // https://alvarotrigo.com/blog/firing-resize-event-only-once-when-resizing-is-finished/
+  let resizeId: number;
+  window.onresize = () => {
+    if (!pid) {
+      return;
+    }
+
+    window.clearTimeout(resizeId);
+    resizeId = window.setTimeout(() => {
+      const [cols, rows] = maximizeTerminalContainer();
+      fetch(`/terminal/resize?cols=${cols}&rows=${rows}`, {method: 'POST'});
+    }, 500);
+  };
+
   terminal.open(terminalContainer!);
   fitAddon.fit();
   terminal.focus();
 
   setTimeout(() => {
-    const [cols, rows] = getTerminalColsAndRows();
+    // const [cols, rows] = getTerminalColsAndRows();
+    const [cols, rows] = maximizeTerminalContainer();
 
     fetch(`/terminal?cols=${cols}&rows=${rows}`, {method: 'POST'}).then(res => {
       res.text().then(processId => {
@@ -47,15 +62,32 @@ function createTerminal(): void {
   }, 0);
 }
 
-function getTerminalColsAndRows(): [number, number] {
-    const width = terminalContainer!.offsetWidth;
-    const height = terminalContainer!.offsetHeight;
-    // TODO: DANGER - using private terminal API :-(
-    const terminalCore = (terminal as any)._core;
-    const cols = Math.floor((width - terminalCore.viewport.scrollBarWidth) / terminalCore._renderService.dimensions.actualCellWidth);
-    const rows = Math.floor(height / terminalCore._renderService.dimensions.actualCellHeight);
+function maximizeTerminalContainer(): [number, number] {
+  // https://www.w3schools.com/cssref/css_default_values.asp
+  const defaultBrowserMargin = 8;
+  // TODO: DANGER - using private terminal API :-(
+  const terminalCore = (terminal as any)._core;
 
-    return [cols, rows];
+  const maxWidth = window.innerWidth - 2 * defaultBrowserMargin;
+  const maxHeight = window.innerHeight - 2 * defaultBrowserMargin;
+
+  const cols = Math.floor(
+    (maxWidth - terminalCore.viewport.scrollBarWidth)
+    / terminalCore._renderService.dimensions.actualCellWidth);
+  const rows = Math.floor(
+    maxHeight / terminalCore._renderService.dimensions.actualCellHeight);
+
+  const containerWidth =
+    cols * terminalCore._renderService.dimensions.actualCellWidth
+    + terminalCore.viewport.scrollBarWidth;
+  const containerHeight =
+    rows * terminalCore._renderService.dimensions.actualCellHeight;
+
+  terminalContainer!.style.height = containerHeight + 'px';
+  terminalContainer!.style.width = containerWidth + 'px';
+  fitAddon.fit();
+
+  return [cols, rows];
 }
 
 createTerminal();
