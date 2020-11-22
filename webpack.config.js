@@ -1,8 +1,12 @@
 const path = require('path');
 
+const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+const devtool = process.env.NODE_ENV === 'production' ? 'source-map' : 'inline-source-map';
+
 module.exports = {
+  mode: mode,
   entry: './src/client.ts',
-  devtool: 'inline-source-map',
+  devtool: devtool,
   module: {
     rules: [
       {
