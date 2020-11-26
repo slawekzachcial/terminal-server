@@ -12,6 +12,7 @@ RUN apt update \
     npm \
     sudo
 RUN npm install \
+  && npm run patch-xterm \
   && NODE_ENV=production npm run build
 RUN useradd --create-home --uid 1000 --user-group --shell /bin/bash me \
   && echo "me ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/me
